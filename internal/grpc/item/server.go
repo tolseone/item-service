@@ -40,7 +40,7 @@ func (s *serverAPI) CreateItem(ctx context.Context, req *itemv1.CreateItemReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	itemID, err := s.item.CreateItem(ctx, req.Item.GetName(), req.Item.GetRarity(), req.Item.GetDescription())
+	itemID, err := s.item.CreateItem(ctx, req.GetName(), req.GetRarity(), req.GetDescription())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "internal error")
 	}
@@ -56,13 +56,70 @@ func (s *serverAPI) CreateItem(ctx context.Context, req *itemv1.CreateItemReques
 }
 
 func (s *serverAPI) GetItem(ctx context.Context, req *itemv1.GetItemRequest) (*itemv1.GetItemResponse, error) {
-	panic("implement me")
+	if err := s.validator.Struct(req); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	itemID, err := uuid.Parse(req.GetItemId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to parse item id")
+	}
+
+	item, err := s.item.GetItem(ctx, itemID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get item")
+	}
+
+	return &itemv1.GetItemResponse{
+		Item: &itemv1.Item{
+			ItemId:      item.ItemId.String(),
+			Name:        item.Name,
+			Rarity:      item.Rarity,
+			Description: item.Description,
+		},
+	}, nil
 }
 
 func (s *serverAPI) GetAllItems(ctx context.Context, req *itemv1.GetAllItemsRequest) (*itemv1.GetAllItemsResponse, error) {
-	panic("implement me")
+	items, err := s.item.GetAllItems(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get all items")
+	}
+
+	var itemResponses []*itemv1.Item
+	for _, item := range items {
+		itemResponses = append(itemResponses, &itemv1.Item{
+			ItemId:      item.ItemId.String(),
+			Name:        item.Name,
+			Rarity:      item.Rarity,
+			Description: item.Description,
+		})
+	}
+
+	response := &itemv1.GetAllItemsResponse{
+        Items: itemResponses,
+    }
+
+    if len(itemResponses) == 0 {
+        return &itemv1.GetAllItemsResponse{}, nil
+    }
+
+    return response, nil
 }
 
 func (s *serverAPI) DeleteItem(ctx context.Context, req *itemv1.DeleteItemRequest) (*itemv1.DeleteItemResponse, error) {
-	panic("implement me")
+	if err := s.validator.Struct(req); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	itemID, err := uuid.Parse(req.GetItemId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to parse item id")
+	}
+
+	if err := s.item.DeleteItem(ctx, itemID); err != nil {
+		return nil, status.Error(codes.Internal, "failed to delete item")
+	}
+
+	return &itemv1.DeleteItemResponse{}, nil
 }
