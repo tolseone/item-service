@@ -68,7 +68,7 @@ func (s *Storage) SaveItem(ctx context.Context, name string, rarity string, desc
 
 	}
 
-	s.log.Info("Completed to create user")
+	s.log.Info("Completed to create item")
 
 	return id, nil
 }
@@ -151,7 +151,7 @@ func (s *Storage) DeleteItem(ctx context.Context, itemID uuid.UUID) error {
 	const op = "Storage.DeleteItem"
 
 	q := `
-		DELETE FROM public.item
+		DELETE FROM items
 		WHERE id = $1
 	`
 	s.log.Info(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
