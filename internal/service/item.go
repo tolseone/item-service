@@ -11,6 +11,7 @@ import (
 	"item-service/internal/domain/models"
 	"item-service/internal/lib/logger/sl"
 	"item-service/internal/storage"
+
 )
 
 type Item struct {
@@ -19,7 +20,7 @@ type Item struct {
 }
 
 type RepositoryItem interface {
-	SaveItem(ctx context.Context, name string, rarity string, description string) (itemID uuid.UUID, err error)
+	SaveItem(ctx context.Context, name string, rarity string, quality string) (itemID uuid.UUID, err error)
 	DeleteItem(ctx context.Context, itemID uuid.UUID) (err error)
 	GetAllItems(ctx context.Context) (items []*models.Item, err error)
 	GetItem(ctx context.Context, itemID uuid.UUID) (item *models.Item, err error)
@@ -38,19 +39,19 @@ func New(log *slog.Logger, repo RepositoryItem) *Item {
 }
 
 // CreateItem creates a new item.
-func (itm *Item) CreateItem(ctx context.Context, name, rarity, description string) (uuid.UUID, error) {
+func (itm *Item) CreateItem(ctx context.Context, name, rarity, quality string) (uuid.UUID, error) {
 	const op = "Item.CreateItem"
 
 	log := itm.log.With(
 		slog.String("op", op),
 		slog.String("name", name),
 		slog.String("rarity", rarity),
-		slog.String("description", description),
+		slog.String("quality", quality),
 	)
 
 	log.Info("attempting to create item")
 
-	itemID, err := itm.repo.SaveItem(ctx, name, rarity, description)
+	itemID, err := itm.repo.SaveItem(ctx, name, rarity, quality)
 	if err != nil {
 		if errors.Is(err, storage.ErrItemExists) {
 			itm.log.Warn("item already exists", sl.Err(err))

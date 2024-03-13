@@ -13,6 +13,7 @@ import (
 	"item-service/internal/config"
 	"item-service/internal/domain/models"
 	"item-service/pkg/client/postgresql"
+
 )
 
 type Storage struct {
@@ -35,7 +36,7 @@ func New(log *slog.Logger) *Storage {
 	}
 }
 
-func (s *Storage) SaveItem(ctx context.Context, name string, rarity string, description string) (uuid.UUID, error) {
+func (s *Storage) SaveItem(ctx context.Context, name string, rarity string, quality string) (uuid.UUID, error) {
 	const op = "Storage.SaveItem"
 
 	q := `
@@ -43,7 +44,7 @@ func (s *Storage) SaveItem(ctx context.Context, name string, rarity string, desc
 			id, 
 			name, 
 			rarity, 
-			description
+			quality
 		)
 		VALUES (
 			gen_random_uuid(), 
@@ -56,7 +57,7 @@ func (s *Storage) SaveItem(ctx context.Context, name string, rarity string, desc
 
 	var id uuid.UUID
 
-	if err := s.client.QueryRow(ctx, q, name, rarity, description).Scan(&id); err != nil {
+	if err := s.client.QueryRow(ctx, q, name, rarity, quality).Scan(&id); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.Is(err, pgErr) {
 			pgErr = err.(*pgconn.PgError)
@@ -81,14 +82,14 @@ func (s *Storage) GetItem(ctx context.Context, itemID uuid.UUID) (*models.Item, 
 			id, 
 			name, 
 			rarity, 
-			description 
+			quality 
 		FROM items
 		WHERE id = $1
 	`
 	s.log.Info(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 
 	var item models.Item
-	if err := s.client.QueryRow(ctx, q, itemID).Scan(&item.ItemId, &item.Name, &item.Rarity, &item.Description); err != nil {
+	if err := s.client.QueryRow(ctx, q, itemID).Scan(&item.ItemId, &item.Name, &item.Rarity, &item.Quality); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.Is(err, pgErr) {
 			pgErr = err.(*pgconn.PgError)
@@ -112,7 +113,7 @@ func (s *Storage) GetAllItems(ctx context.Context) ([]*models.Item, error) {
 			id, 
 			name, 
 			rarity, 
-			description 
+			quality 
 		FROM items
 	`
 	s.log.Info(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
@@ -133,7 +134,7 @@ func (s *Storage) GetAllItems(ctx context.Context) ([]*models.Item, error) {
 	for rows.Next() {
 		var item models.Item
 
-		if err := rows.Scan(&item.ItemId, &item.Name, &item.Rarity, &item.Description); err != nil {
+		if err := rows.Scan(&item.ItemId, &item.Name, &item.Rarity, &item.Quality); err != nil {
 			return []*models.Item{}, fmt.Errorf("%s: %w", op, err)
 		}
 

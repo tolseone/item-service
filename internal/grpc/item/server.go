@@ -11,11 +11,10 @@ import (
 	"google.golang.org/grpc/status"
 
 	"item-service/internal/domain/models"
-
 )
 
 type Item interface {
-	CreateItem(ctx context.Context, name, rarity, description string) (itemID uuid.UUID, err error)
+	CreateItem(ctx context.Context, name, rarity, quality string) (itemID uuid.UUID, err error)
 	GetItem(ctx context.Context, itemID uuid.UUID) (item *models.Item, err error)
 	GetAllItems(ctx context.Context) (items []*models.Item, err error)
 	DeleteItem(ctx context.Context, itemID uuid.UUID) (err error)
@@ -40,7 +39,7 @@ func (s *serverAPI) CreateItem(ctx context.Context, req *itemv1.CreateItemReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	itemID, err := s.item.CreateItem(ctx, req.GetName(), req.GetRarity(), req.GetDescription())
+	itemID, err := s.item.CreateItem(ctx, req.GetName(), req.GetRarity(), req.GetQuality())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "internal error")
 	}
@@ -72,10 +71,10 @@ func (s *serverAPI) GetItem(ctx context.Context, req *itemv1.GetItemRequest) (*i
 
 	return &itemv1.GetItemResponse{
 		Item: &itemv1.Item{
-			ItemId:      item.ItemId.String(),
-			Name:        item.Name,
-			Rarity:      item.Rarity,
-			Description: item.Description,
+			ItemId:  item.ItemId.String(),
+			Name:    item.Name,
+			Rarity:  item.Rarity,
+			Quality: item.Quality,
 		},
 	}, nil
 }
@@ -89,22 +88,22 @@ func (s *serverAPI) GetAllItems(ctx context.Context, req *itemv1.GetAllItemsRequ
 	var itemResponses []*itemv1.Item
 	for _, item := range items {
 		itemResponses = append(itemResponses, &itemv1.Item{
-			ItemId:      item.ItemId.String(),
-			Name:        item.Name,
-			Rarity:      item.Rarity,
-			Description: item.Description,
+			ItemId:  item.ItemId.String(),
+			Name:    item.Name,
+			Rarity:  item.Rarity,
+			Quality: item.Quality,
 		})
 	}
 
 	response := &itemv1.GetAllItemsResponse{
-        Items: itemResponses,
-    }
+		Items: itemResponses,
+	}
 
-    if len(itemResponses) == 0 {
-        return &itemv1.GetAllItemsResponse{}, nil
-    }
+	if len(itemResponses) == 0 {
+		return &itemv1.GetAllItemsResponse{}, nil
+	}
 
-    return response, nil
+	return response, nil
 }
 
 func (s *serverAPI) DeleteItem(ctx context.Context, req *itemv1.DeleteItemRequest) (*itemv1.DeleteItemResponse, error) {
